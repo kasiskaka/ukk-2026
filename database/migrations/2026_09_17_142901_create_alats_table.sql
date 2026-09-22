@@ -1,6 +1,6 @@
 -- create_alats_table
 
-CREATE TABLE IF NOT EXISTS `alats` (
+CREATE TABLE IF NOT EXISTS `alat` (
     id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     nama       VARCHAR(255) NOT NULL,
     created_at DATETIME NULL,
