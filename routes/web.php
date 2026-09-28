@@ -7,7 +7,7 @@ use App\Controllers\Core\DocsController;
 use App\Controllers\Core\RoleController;
 use App\Controllers\Core\UserController;
 use App\Controllers\KategoriController;
-use App\Controllers\alatController;
+use App\Controllers\AlatController;
 use App\Controllers\PeminjamanController;
 use App\Controllers\PeminjamPortalController;
 
@@ -79,7 +79,7 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin'], function () {
     Route::post('/peminjaman', [PeminjamanController::class, 'store'])->name('peminjaman.store');
     Route::get('/peminjaman/{id}/edit', [PeminjamanController::class, 'edit'])->name('peminjaman.edit');
     Route::post('/peminjaman/{id}/update', [PeminjamanController::class, 'update'])->name('peminjaman.update');
-    Route::post('/peminjaman/{id}/delete', [PeminjamanController::class, 'delete'])->name('peminjaman.delete');
+    Route::delete('/peminjaman/{id_peminjaman}/delete', [PeminjamanController::class, 'delete'])->name('peminjaman.delete');
 
     Route::get('/pengembalian', [PengembalianController::class, 'index'])->name('pengembalian.index');
     Route::get('/pengembalian/create', [PengembalianController::class, 'create'])->name('pengembalian.create');
@@ -110,6 +110,11 @@ Route::group(['prefix' => 'petugas', 'middleware' => 'petugas'], function () {
     Route::get('/', [DashboardController::class, 'index'])->name('petugas.dashboard');
 });
 // @role:petugas:end
+// @role:pengguna:start
+Route::group(['prefix' => 'pengguna', 'middleware' => 'pengguna'], function () {
+    Route::get('/', [DashboardController::class, 'index'])->name('pengguna.dashboard');
+});
+// @role:pengguna:end
 // @generated-roles:end
 
 /*

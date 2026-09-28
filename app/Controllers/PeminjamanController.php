@@ -6,7 +6,7 @@ use Sakuci\Controller;
 use Sakuci\Http\Request;
 use App\Models\Peminjaman;
 use App\Models\User;
-use App\Models\alat;
+use App\Models\Alat;
 
 class PeminjamanController extends Controller
 {
@@ -47,7 +47,7 @@ class PeminjamanController extends Controller
         $datap = Peminjaman::findOrFail($id_peminjaman);
         $users = User::all();
         $alat = Alat::all();
-        return view('peminjaman.edit', compact('data', 'users', 'alat'));
+        return view('peminjaman.edit', compact('datap', 'users', 'alat'));
     }
 
     public function update(Request $request, $id_peminjaman)

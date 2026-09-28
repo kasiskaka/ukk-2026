@@ -38,11 +38,11 @@ class KategoriController extends Controller
     {
         $data = $request->all();
 
-        $kategori = kategori::FindOrfail($id_kategori);
+        $kategori = Kategori::FindOrfail($id_kategori);
         $kategori->update($data);
         return redirect(route('kategori.index'))->with('success', 'kategori berhasil diubah');
     }
-   public function delete(Request $request, $id_kategori)
+   public function destroy(Request $request, $id_kategori)
     {
         $kategori = Kategori::findOrFail($id_kategori);
         $kategori->delete();

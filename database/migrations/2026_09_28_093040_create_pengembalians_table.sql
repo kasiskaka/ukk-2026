@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS `pengembalian` (
     `id_pengembalian`      INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `id_peminjaman`        INT NOT NULL,
+    `id_peminjaman`        INT UNSIGNED NOT NULL,
     `tanggal_pengembalian` DATETIME NOT NULL,
     `terlambat_hari`       INT UNSIGNED DEFAULT 0,
     `denda`                INT DEFAULT 0,

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', config('app.name') . ' -- Daftar Peminjaman Alat')
+@section('title', config('app.name') . ' -- Daftar Pengembalian Alat')
 
 @section('content')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -12,15 +12,15 @@
         <div>
             <div class="d-flex align-items-center gap-2 mb-1">
                 <span class="badge bg-primary-subtle text-primary px-2.5 py-1 rounded-pill fw-semibold small">
-                    <i class="bi bi-box-seam me-1"></i> Transaksi Peminjaman
+                    <i class="bi bi-box-seam me-1"></i> Transaksi pengembalian
                 </span>
             </div>
-            <h3 class="fw-bold mb-1 text-body">Daftar Peminjaman Alat</h3>
+            <h3 class="fw-bold mb-1 text-body">Daftar Pengembalian Alat</h3>
             <p class="text-body-secondary small mb-0">Kelola riwayat permohonan, status persetujuan, dan jadwal peminjaman alat sarpras.</p>
         </div>
         <a href="{{ route('peminjaman.create') }}" class="btn btn-primary fw-semibold px-3 py-2 rounded-3 shadow-sm d-inline-flex align-items-center gap-2">
             <i class="bi bi-plus-circle-fill"></i>
-            <span>Tambah Peminjaman Baru</span>
+            <span>Tambah Pengembalian Baru</span>
         </a>
     </div>
 
@@ -42,7 +42,7 @@
         <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center gap-2">
                 <i class="bi bi-list-check text-primary fs-5"></i>
-                <h6 class="fw-bold mb-0 text-body">Data Peminjaman Aktif</h6>
+                <h6 class="fw-bold mb-0 text-body">Data Pengembalian Aktif</h6>
             </div>
             <span class="badge bg-body text-body-secondary border px-3 py-1.5 rounded-pill small fw-normal">
                 Total: {{ count($datap) }} Data

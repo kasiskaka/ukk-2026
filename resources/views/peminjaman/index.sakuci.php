@@ -16,7 +16,7 @@
                 </span>
             </div>
             <h3 class="fw-bold mb-1 text-body">Daftar Peminjaman Alat</h3>
-            <p class="text-body-secondary small mb-0">Kelola riwayat permohonan, status persetujuan, dan jadwal peminjaman alat sarpras.</p>
+            <p class="text-body-secondary small mb-0">Kelola riwayat permohonan, status persetujuan, dan jadwal peminjaman alat.</p>
         </div>
         <a href="{{ route('peminjaman.create') }}" class="btn btn-primary fw-semibold px-3 py-2 rounded-3 shadow-sm d-inline-flex align-items-center gap-2">
             <i class="bi bi-plus-circle-fill"></i>
