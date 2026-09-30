@@ -5,7 +5,55 @@
 @section('content')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-<div class="container-fluid py-4 px-4">
+<?php
+    // Hitung ringkasan (PHP sederhana, hanya membaca $datap)
+    $pmToday = strtotime(date('Y-m-d'));
+    $pmBelum = 0; $pmSudah = 0; $pmTelat = 0; $pmDenda = 0;
+    $pmDaftar = array();
+    foreach ($datap as $pmx) {
+        $pmDenda += (int) $pmx->denda;
+        if ($pmx->status == 'Dipinjam') {
+            $pmBelum++;
+            $pmDue = $pmx->tanggal_kembali ? strtotime($pmx->tanggal_kembali) : false;
+            $pmSisa = $pmDue ? (int) round(($pmDue - $pmToday) / 86400) : null;
+            if ($pmSisa !== null && $pmSisa < 0) { $pmTelat++; }
+            $pmDaftar[] = array($pmx, $pmSisa);
+        }
+        if ($pmx->status == 'Dikembalikan') { $pmSudah++; }
+    }
+?>
+<style>
+    :root{
+        --pm-pink:#fbe4ec; --pm-pink-3:#e58aab; --pm-gray:#eeeef0; --pm-gray-2:#9a9aa3;
+        --pm-gray-3:#4a4a53; --pm-white:#ffffff; --pm-gold:#c9a45c; --pm-gold-2:#f3e6c4;
+    }
+    .pm-page > .d-flex:first-child{ background:linear-gradient(120deg,#fff 45%,var(--pm-pink) 100%); border:1px solid var(--pm-gold-2); border-left:6px solid var(--pm-gold); border-radius:1.2rem; padding:1.4rem 1.8rem; }
+    .pm-page h3{ font-weight:800; color:var(--pm-gray-3) !important; }
+    .pm-page .btn-primary{ background:var(--pm-gold); border-color:var(--pm-gold); }
+    .pm-page .btn-primary:hover{ background:var(--pm-pink-3); border-color:var(--pm-pink-3); }
+    .pm-page .card.bg-body-tertiary{ background:#fff !important; border:1px solid var(--pm-gray) !important; }
+    .pm-page .card-header{ background:var(--pm-pink) !important; }
+    .pm-page .table thead th{ background:var(--pm-gray) !important; font-size:.72rem; white-space:nowrap; }
+    .pm-page .table tbody td{ font-size:.88rem; white-space:nowrap; }
+    .pm-page .fs-7{ font-size:.88rem !important; }
+    .pm-page .fs-8{ font-size:.72rem !important; }
+    .pm-page .badge{ padding:.4rem .75rem; white-space:nowrap; }
+
+    /* Ringkasan */
+    .pm-box{ background:#fff; border:1px solid var(--pm-gray); border-left:5px solid var(--pm-gold); border-radius:1rem; padding:1rem 1.2rem; height:100%; }
+    .pm-box .pm-num{ font-size:1.6rem; font-weight:800; line-height:1.1; color:var(--pm-gray-3); }
+    .pm-box .pm-lbl{ font-size:.8rem; color:var(--pm-gray-2); }
+    .pm-box.pink{ border-left-color:var(--pm-pink-3); }
+    .pm-box.gray{ border-left-color:var(--pm-gray-2); }
+    .pm-section{ background:#fff; border:1px solid var(--pm-gray); border-radius:1rem; padding:1.2rem; }
+    .pm-section h6{ font-weight:800; color:var(--pm-gray-3); margin-bottom:1rem; }
+    .pm-tag{ font-size:.75rem; font-weight:700; padding:.3rem .7rem; border-radius:999px; white-space:nowrap; }
+    .pm-tag.ok{ background:var(--pm-gold-2); color:#8a6a25; }
+    .pm-tag.warn{ background:#fff; color:#8a6a25; border:1px solid var(--pm-gold); }
+    .pm-tag.bad{ background:var(--pm-pink); color:#b04a6f; }
+</style>
+
+<div class="container-fluid py-4 px-4 pm-page">
     
     <!-- Header Halaman & Tombol Tambah -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
@@ -34,6 +82,14 @@
             <button type="button" class="btn-close shadow-none" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
+
+    <!-- Ringkasan -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3"><div class="pm-box"><div class="pm-num">{{ $pmBelum }}</div><div class="pm-lbl">Belum dikembalikan</div></div></div>
+        <div class="col-6 col-lg-3"><div class="pm-box gray"><div class="pm-num">{{ $pmSudah }}</div><div class="pm-lbl">Sudah dikembalikan</div></div></div>
+        <div class="col-6 col-lg-3"><div class="pm-box pink"><div class="pm-num">{{ $pmTelat }}</div><div class="pm-lbl">Terlambat</div></div></div>
+        <div class="col-6 col-lg-3"><div class="pm-box gray"><div class="pm-num" style="font-size:1.25rem;">Rp {{ number_format($pmDenda, 0, ',', '.') }}</div><div class="pm-lbl">Total denda</div></div></div>
+    </div>
 
     <!-- Card Pembungkus Tabel -->
     <div class="card border-0 bg-body-tertiary shadow-sm rounded-4 overflow-hidden mb-4">
@@ -190,6 +246,44 @@
             {!! $datap->links() !!}
         </div>
         @endif
+    </div>
+
+    <!-- Catatan jatuh tempo -->
+    <div class="pm-section mb-4">
+        <h6>Catatan Jatuh Tempo (Belum Dikembalikan)</h6>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead>
+                    <tr><th>Peminjam</th><th>Nama Alat</th><th>Jumlah</th><th>Tgl Pinjam</th><th>Jatuh Tempo</th><th>Keterangan</th></tr>
+                </thead>
+                <tbody>
+                    @forelse ($pmDaftar as $row)
+                    <tr>
+                        <td>{{ $row[0]->user->nama ?? 'User ID: ' . $row[0]->id_user }}</td>
+                        <td>{{ $row[0]->alat->nama_alat ?? 'Alat ID: ' . $row[0]->id_alat }}</td>
+                        <td>{{ $row[0]->jumlah }} Unit</td>
+                        <td>{{ $row[0]->tanggal_pinjam }}</td>
+                        <td>{{ $row[0]->tanggal_kembali ? $row[0]->tanggal_kembali : '-' }}</td>
+                        <td>
+                            @if($row[1] === null)
+                                <span class="pm-tag ok">Tanpa tenggat</span>
+                            @elseif($row[1] < 0)
+                                <span class="pm-tag bad">Telat {{ abs($row[1]) }} hari</span>
+                            @elseif($row[1] == 0)
+                                <span class="pm-tag warn">Kembali hari ini</span>
+                            @elseif($row[1] <= 2)
+                                <span class="pm-tag warn">Sisa {{ $row[1] }} hari</span>
+                            @else
+                                <span class="pm-tag ok">Sisa {{ $row[1] }} hari</span>
+                            @endif
+                        </td>
+                    </tr>
+                    @empty
+                    <tr><td colspan="6" class="text-center text-body-secondary py-3">Semua alat sudah dikembalikan.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 
 </div>
