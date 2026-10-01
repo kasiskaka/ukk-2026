@@ -25,7 +25,7 @@
 <main class="container flex-grow-1 py-4 py-lg-5">
     @include('partials.flash')
 
-    @yield('content')
+    
 </main>
 
 @include('partials.footer')

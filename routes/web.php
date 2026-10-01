@@ -47,6 +47,11 @@ Route::post('/register', [AuthController::class, 'register'])->name('register.at
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard')->middleware('auth');
 
+// PINDAH: route untuk peminjam (di luar grup admin, cukup login)
+Route::get('/peminjaman/katalog', [PeminjamanController::class, 'katalog'])->name('peminjaman.katalog')->middleware('auth');
+Route::get('/peminjaman/ajukan', [PeminjamanController::class, 'ajukan'])->name('peminjaman.ajukan')->middleware('auth');
+Route::post('/peminjaman/ajukan', [PeminjamanController::class, 'simpan'])->name('peminjaman.simpan')->middleware('auth');
+
 Route::group(['prefix' => 'admin', 'middleware' => 'admin'], function () {
     Route::get('/', [DashboardController::class, 'admin'])->name('admin.dashboard');
 
@@ -80,6 +85,10 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin'], function () {
     Route::get('/peminjaman/{id}/edit', [PeminjamanController::class, 'edit'])->name('peminjaman.edit');
     Route::post('/peminjaman/{id}/update', [PeminjamanController::class, 'update'])->name('peminjaman.update');
     Route::delete('/peminjaman/{id_peminjaman}/delete', [PeminjamanController::class, 'delete'])->name('peminjaman.delete');
+
+    // BARU: admin setujui / tolak pengajuan
+    Route::post('/peminjaman/{id}/setujui', [PeminjamanController::class, 'setujui'])->name('peminjaman.setujui');
+    Route::post('/peminjaman/{id}/tolak', [PeminjamanController::class, 'tolak'])->name('peminjaman.tolak');
 
     Route::get('/pengembalian', [PengembalianController::class, 'index'])->name('pengembalian.index');
     Route::get('/pengembalian/create', [PengembalianController::class, 'create'])->name('pengembalian.create');

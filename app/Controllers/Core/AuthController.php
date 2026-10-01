@@ -48,7 +48,7 @@ class AuthController extends Controller
 
         Session::put('user_id', $user->id);
 
-        return redirect('/dashboard')->with('success', 'Pendaftaran berhasil. Selamat datang, ' . $user->username . '.');
+        return redirect('/dashboard');
     }
 
     public function login(Request $request)
@@ -68,8 +68,7 @@ class AuthController extends Controller
 
         Session::put('user_id', $user->id);
 
-        return redirect($user->role === 'admin' ? '/admin' : '/dashboard')
-            ->with('success', 'Selamat datang, ' . $user->username . '.');
+        return redirect($user->role === 'admin' ? '/admin' : '/dashboard');
     }
 
     public function logout()
@@ -79,4 +78,3 @@ class AuthController extends Controller
         return redirect('/login')->with('success', 'Berhasil logout.');
     }
 }
-

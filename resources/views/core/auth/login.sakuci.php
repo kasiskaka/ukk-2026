@@ -4,6 +4,9 @@
 
 @section('content')
 
+{{-- BARU: latar belakang emoji alat jaringan & komputer (pink soft + semi gold) --}}
+@include('partials.bg_alat')
+
 <style>
     /* Penyesuaian tema halaman login agar senada dengan sidebar pink & gold */
     .login-card {
@@ -51,20 +54,20 @@
                 </div>
 
                 <div class="alert alert-light border small text-secondary py-2 mb-3 shadow-2">
-                    💡 <strong>Akun Demo:</strong> <code>admin</code> &mdash; Password: <code class="text-dark">rahasia123</code>
+                     <code>admin</code> &mdash; Password: <code class="text-dark">rahasia123</code>
                 </div>
 
                 <form method="POST" action="{{ route('login.attempt') }}">
                     @csrf
 
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold" for="username">👤 Username</label>
+                        <label class="form-label small fw-semibold" for="username"> Username</label>
                         <input type="text" id="username" name="username" value="{{ old('username') }}" class="form-control form-control-sm {{ errors()->has('username') ? 'is-invalid' : '' }}" autofocus placeholder="Masukkan username...">
                         @error('username') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold" for="password">🔑 Password</label>
+                        <label class="form-label small fw-semibold" for="password"> Password</label>
                         <input type="password" id="password" name="password" class="form-control form-control-sm {{ errors()->has('password') ? 'is-invalid' : '' }}" placeholder="••••••••">
                         @error('password') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>

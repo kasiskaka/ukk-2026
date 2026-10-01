@@ -87,6 +87,18 @@
         color: var(--gold-primary) !important;
     }
 
+    /* BARU: badge notifikasi pengajuan pending berdenyut pelan */
+    .badge-notif {
+        animation: notifKedip 1.6s ease-in-out infinite;
+    }
+    @keyframes notifKedip {
+        0%, 100% { transform: scale(1); }
+        50%      { transform: scale(1.18); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .badge-notif { animation: none; }
+    }
+
     /* Responsif Mobile: Sidebar otomatis overlay / collapse */
     @media (max-width: 991.98px) {
         .app-sidebar {
@@ -123,8 +135,25 @@
                 <button type="button" class="btn-close btn-sm d-lg-none" data-bs-toggle="collapse" data-bs-target="#appSidebar" aria-label="Tutup"></button>
             </div>
 
+            <!-- BARU: ambil user dan cek admin (dipindah ke atas menu) -->
+            @php
+                $currentUser = \App\Models\User::current();
+                $isAdmin = $currentUser && $currentUser->role === 'admin';
+
+                // BARU: hitung pengajuan Pending untuk notifikasi admin
+                $pendingCount = 0;
+                if ($isAdmin) {
+                    foreach (\App\Models\Peminjaman::all() as $pn) {
+                        if (strtolower($pn->status) === 'pending') { $pendingCount++; }
+                    }
+                }
+            @endphp
+
             <!-- Navigasi Menu Compact dengan Emoji -->
             <ul class="nav nav-pills flex-column gap-1">
+
+                <!-- BARU: menu di bawah ini hanya tampil untuk admin -->
+                @if ($isAdmin)
                 <li class="nav-item">
                     <a class="nav-link {{ is_route('home') ? 'active' : '' }}" href="{{ route('home') }}">
                         🏠 Beranda
@@ -143,6 +172,10 @@
                 <li class="nav-item">
                     <a class="nav-link {{ is_route('peminjaman') ? 'active' : '' }}" href="{{ route('peminjaman.index') }}">
                         📋 Peminjaman
+                        <!-- BARU: badge notifikasi jumlah pengajuan Pending -->
+                        @if ($pendingCount > 0)
+                            <span class="badge rounded-pill bg-danger ms-1 badge-notif">{{ $pendingCount }}</span>
+                        @endif
                     </a>
                 </li>
                 <li class="nav-item">
@@ -150,10 +183,7 @@
                         🔄 Pengembalian
                     </a>
                 </li>
-
-                @php
-                    $currentUser = \App\Models\User::current();
-                @endphp
+                @endif
 
                 @if ($currentUser)
                     <li class="nav-item mt-2 pt-2 border-top">
@@ -165,6 +195,16 @@
                             📊 Dashboard
                         </a>
                     </li>
+
+                    <!-- BARU: menu khusus peminjam (non-admin) -->
+                    @if (! $isAdmin)
+                    <li class="nav-item">
+                        <a class="nav-link {{ is_route('peminjaman.katalog', 'peminjaman.ajukan') ? 'active' : '' }}"
+                           href="{{ route('peminjaman.katalog') }}">
+                            ➕ Ajukan Peminjaman
+                        </a>
+                    </li>
+                    @endif
                 @endif
             </ul>
         </div>
