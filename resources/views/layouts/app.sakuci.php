@@ -18,17 +18,9 @@
     <link rel="stylesheet" href="{{ asset('vendor/bootstrap/css/bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
 </head>
-<body class="d-flex flex-column min-vh-100 bg-body-tertiary">
+<body class="bg-body-tertiary">
 
 @include('partials.navbar')
-
-<main class="container flex-grow-1 py-4 py-lg-5">
-    @include('partials.flash')
-
-    
-</main>
-
-@include('partials.footer')
 
 <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
 <script src="{{ asset('js/theme.js') }}"></script>

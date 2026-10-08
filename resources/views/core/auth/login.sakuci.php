@@ -2,96 +2,71 @@
 
 @section('title', 'Login')
 
+@section('styles')
+    <link rel="stylesheet" href="{{ asset('css/login.css') }}">
+@endsection
+
 @section('content')
 
-{{-- BARU: latar belakang emoji alat jaringan & komputer (pink soft + semi gold) --}}
-@include('partials.bg_alat')
+<div class="login-page">
+    <div class="login-card">
 
-<style>
-    /* Penyesuaian tema halaman login agar senada dengan sidebar pink & gold */
-    .login-card {
-        background-color: #fff5f8;
-        border: 1px solid #f3d7e5 !important;
-        border-radius: 12px;
-    }
-    
-    [data-bs-theme="dark"] .login-card {
-        background-color: #1f1a1d;
-        border-color: #382d33 !important;
-    }
-
-    .btn-gold {
-        background-color: #d4af37;
-        border-color: #d4af37;
-        color: #ffffff;
-        transition: background-color 0.2s;
-    }
-
-    .btn-gold:hover {
-        background-color: #c59b27;
-        border-color: #c59b27;
-        color: #ffffff;
-    }
-
-    .text-gold {
-        color: #d4af37 !important;
-    }
-</style>
-
-<div class="row justify-content-center align-items-center" style="min-height: 75vh;">
-    <div class="col-md-5">
-        <!-- Kartu Login dengan Nuansa Pink Soft & Gold -->
-        <div class="card login-card shadow-sm p-2">
-            <div class="card-body p-4">
-                
-                <!-- Header dengan Emoji Alat Komputer & Jaringan -->
-                <div class="text-center mb-4">
-                    <div class="d-inline-flex align-items-center justify-content-center bg-white shadow-sm border border-warning rounded-circle mb-2" style="width: 55px; height: 55px; font-size: 24px;">
-                        🖥️
-                    </div>
-                    <h1 class="h4 mb-1 fw-bold text-gold">Masuk Sistem</h1>
-                    <p class="text-muted small mb-0">Peminjaman Alat Jaringan & Komputer </p>
-                </div>
-
-                <div class="alert alert-light border small text-secondary py-2 mb-3 shadow-2">
-                     <code>admin</code> &mdash; Password: <code class="text-dark">rahasia123</code>
-                </div>
-
-                <form method="POST" action="{{ route('login.attempt') }}">
-                    @csrf
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold" for="username"> Username</label>
-                        <input type="text" id="username" name="username" value="{{ old('username') }}" class="form-control form-control-sm {{ errors()->has('username') ? 'is-invalid' : '' }}" autofocus placeholder="Masukkan username...">
-                        @error('username') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold" for="password"> Password</label>
-                        <input type="password" id="password" name="password" class="form-control form-control-sm {{ errors()->has('password') ? 'is-invalid' : '' }}" placeholder="••••••••">
-                        @error('password') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                    </div>
-
-                    <button class="btn btn-gold btn-sm w-100 py-2 fw-semibold shadow-sm rounded-pill mt-2" type="submit">
-                        🚀 Masuk ke Dashboard
-                    </button>
-                </form>
-
-                @php
-                    $canRegister = false;
-                    try {
-                        $canRegister = \App\Models\Role::where('can_register', 1)->exists();
-                    } catch (\Throwable $e) {
-                        $canRegister = false;
-                    }
-                @endphp
-                @if ($canRegister)
-                    <p class="text-secondary small text-center mt-3 mb-0">
-                        Belum punya akun? <a href="{{ route('register') }}" class="text-gold fw-semibold text-decoration-none">Daftar di sini 📝</a>
-                    </p>
-                @endif
-            </div>
+        <div class="login-header">
+            <div class="login-mark" aria-hidden="true">NP</div>
+            <h1 class="login-title">Masuk</h1>
+            <p class="login-subtitle">Peminjaman alat jaringan &amp; komputer</p>
         </div>
+
+        <form method="POST" action="{{ route('login.attempt') }}" novalidate>
+            @csrf
+
+            <div class="login-field">
+                <label class="login-label" for="username">Username</label>
+                <input type="text"
+                       id="username"
+                       name="username"
+                       value="{{ old('username') }}"
+                       class="form-control login-input {{ errors()->has('username') ? 'is-invalid' : '' }}"
+                       placeholder="Masukkan username"
+                       autocomplete="username"
+                       autofocus>
+                @error('username')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+
+            <div class="login-field">
+                <label class="login-label" for="password">Password</label>
+                <input type="password"
+                       id="password"
+                       name="password"
+                       class="form-control login-input {{ errors()->has('password') ? 'is-invalid' : '' }}"
+                       placeholder="Masukkan password"
+                       autocomplete="current-password">
+                @error('password')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+
+            <button type="submit" class="login-btn">Masuk</button>
+        </form>
+
+        @php
+            $canRegister = false;
+            try {
+                $canRegister = \App\Models\Role::where('can_register', 1)->exists();
+            } catch (\Throwable $e) {
+                $canRegister = false;
+            }
+        @endphp
+
+        @if ($canRegister)
+            <p class="login-foot">
+                Belum punya akun?
+                <a href="{{ route('register') }}">Daftar di sini</a>
+            </p>
+        @endif
+
     </div>
 </div>
 
