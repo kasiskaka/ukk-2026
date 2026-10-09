@@ -68,7 +68,16 @@ class AuthController extends Controller
 
         Session::put('user_id', $user->id);
 
-        return redirect($user->role === 'admin' ? '/admin' : '/dashboard');
+        // Pengalihan halaman berdasarkan role user
+        if ($user->role === 'admin') {
+            return redirect('/admin');
+        } elseif ($user->role === 'petugas') {
+            return redirect('/petugas');
+        } elseif ($user->role === 'peminjam') {
+            return redirect('/peminjam');
+        }
+
+        return redirect('/dashboard');
     }
 
     public function logout()

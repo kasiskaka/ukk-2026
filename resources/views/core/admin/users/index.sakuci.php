@@ -61,6 +61,7 @@
                                 <th>#</th>
                                 <th>Username</th>
                                 <th>Role</th>
+                                <th class="text-end">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -69,10 +70,57 @@
                                     <td>{{ $item->id }}</td>
                                     <td>{{ $item->username }}</td>
                                     <td><code class="inline">{{ $item->role }}</code></td>
+                                    <td class="text-end text-nowrap">
+                                        <button type="button" class="btn btn-sm btn-outline-info"
+                                                onclick="document.getElementById('edit-user-{{ $item->id }}').showModal()">Edit</button>
+
+                                        <form method="POST" action="{{ route('admin.users.destroy', ['id' => $item->id]) }}"
+                                              class="d-inline"
+                                              onsubmit="return confirm('Hapus user {{ $item->username }}?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Hapus</button>
+                                        </form>
+
+                                        <dialog id="edit-user-{{ $item->id }}" class="text-start rounded-3 border-0 p-4 shadow"
+                                                style="background: var(--bs-body-bg, #fff); color: var(--bs-body-color, #212529); width: min(420px, 92vw);">
+                                            <form method="POST" action="{{ route('admin.users.update', ['id' => $item->id]) }}">
+                                                @csrf
+                                                @method('PUT')
+
+                                                <h2 class="h6 mb-3">Edit User</h2>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label" for="edit-username-{{ $item->id }}">Username</label>
+                                                    <input type="text" id="edit-username-{{ $item->id }}" name="username" value="{{ $item->username }}" class="form-control">
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label" for="edit-password-{{ $item->id }}">Password baru</label>
+                                                    <input type="password" id="edit-password-{{ $item->id }}" name="password" class="form-control" placeholder="Kosongkan jika tidak diganti">
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label" for="edit-role-{{ $item->id }}">Role</label>
+                                                    <select id="edit-role-{{ $item->id }}" name="role" class="form-select">
+                                                        @foreach ($roles as $roleOption)
+                                                            <option value="{{ $roleOption->name }}" @if ($item->role === $roleOption->name) selected @endif>{{ $roleOption->name }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+
+                                                <div class="d-flex justify-content-end gap-2">
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                            onclick="document.getElementById('edit-user-{{ $item->id }}').close()">Batal</button>
+                                                    <button type="submit" class="btn btn-sm btn-brand">Simpan</button>
+                                                </div>
+                                            </form>
+                                        </dialog>
+                                    </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="3" class="text-secondary">Belum ada user.</td>
+                                    <td colspan="4" class="text-secondary">Belum ada user.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -83,4 +131,3 @@
     </div>
 
 @endsection
-

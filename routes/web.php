@@ -10,6 +10,7 @@ use App\Controllers\KategoriController;
 use App\Controllers\AlatController;
 use App\Controllers\PeminjamanController;
 use App\Controllers\PeminjamPortalController;
+use App\Controllers\PengembalianController;
 
 use Sakuci\Route;
 
@@ -47,12 +48,16 @@ Route::post('/register', [AuthController::class, 'register'])->name('register.at
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard')->middleware('auth');
 
-// PINDAH: route untuk peminjam (di luar grup admin, cukup login)
+// Route untuk peminjam
 Route::get('/peminjaman/katalog', [PeminjamanController::class, 'katalog'])->name('peminjaman.katalog')->middleware('auth');
 Route::get('/peminjaman/ajukan', [PeminjamanController::class, 'ajukan'])->name('peminjaman.ajukan')->middleware('auth');
 Route::post('/peminjaman/ajukan', [PeminjamanController::class, 'simpan'])->name('peminjaman.simpan')->middleware('auth');
 
-Route::group(['prefix' => 'admin', 'middleware' => 'admin'], function () {
+// Rute riwayat peminjaman (agar tidak error 404)
+Route::get('/riwayat-peminjaman', [PeminjamanController::class, 'riwayat'])->name('peminjaman.riwayat')->middleware('auth');
+
+// Grup admin dengan middleware auth (bebas akses asal sudah login)
+Route::group(['prefix' => 'admin', 'middleware' => 'auth'], function () {
     Route::get('/', [DashboardController::class, 'admin'])->name('admin.dashboard');
 
     Route::get('/kategori', [KategoriController::class, 'index'])->name('kategori.index');
@@ -64,20 +69,22 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin'], function () {
 
     Route::get('/users', [UserController::class, 'index'])->name('admin.users.index');
     Route::post('/users', [UserController::class, 'store'])->name('admin.users.store');
+    Route::put('/users/{id}', [UserController::class, 'update'])->name('admin.users.update');
+    Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('admin.users.destroy');
 
     Route::get('/database/export', [DatabaseController::class, 'export'])->name('admin.database.export');
-    Route::get('/kategori/create',[App\Controllers\KategoriController::class, 'create'])->name('kategori.create');
-    Route::post('/kategori',[App\Controllers\KategoriController::class, 'store'])->name('kategori.store');
-    Route::get('/kategori/{id_kategori}/edit',[App\Controllers\KategoriController::class, 'edit'])->name('kategori.edit');
-    Route::put('/kategori/{id_kategori}',[App\Controllers\KategoriController::class, 'update'])->name('kategori.update');
-    Route::delete('/kategori/{id_kategori}',[App\Controllers\KategoriController::class, 'destroy'])->name('kategori.destroy');
+    Route::get('/kategori/create',[KategoriController::class, 'create'])->name('kategori.create');
+    Route::post('/kategori',[KategoriController::class, 'store'])->name('kategori.store');
+    Route::get('/kategori/{id_kategori}/edit',[KategoriController::class, 'edit'])->name('kategori.edit');
+    Route::put('/kategori/{id_kategori}',[KategoriController::class, 'update'])->name('kategori.update');
+    Route::delete('/kategori/{id_kategori}',[KategoriController::class, 'destroy'])->name('kategori.destroy');
 
-    Route::get('/alat', [alatController::class, 'index'])->name('alat.index');
-    Route::get('/alat/create', [alatController::class, 'create'])->name('alat.create');
-    Route::post('/alat/store', [alatController::class, 'store'])->name('alat.store');
-    Route::get('/alat/{id_alat}/edit', [alatController::class, 'edit'] )->name('alat.edit');
-    Route::put('/alat/{id_alat}', [alatController::class, 'update'] )->name('alat.update');
-    Route::delete('/alat/{id_alat}', [alatController::class, 'delete'] )->name('alat.delete');
+    Route::get('/alat', [AlatController::class, 'index'])->name('alat.index');
+    Route::get('/alat/create', [AlatController::class, 'create'])->name('alat.create');
+    Route::post('/alat/store', [AlatController::class, 'store'])->name('alat.store');
+    Route::get('/alat/{id_alat}/edit', [AlatController::class, 'edit'] )->name('alat.edit');
+    Route::put('/alat/{id_alat}', [AlatController::class, 'update'] )->name('alat.update');
+    Route::delete('/alat/{id_alat}', [AlatController::class, 'delete'] )->name('alat.delete');
 
     Route::get('/peminjaman', [PeminjamanController::class, 'index'])->name('peminjaman.index');
     Route::get('/peminjaman/create', [PeminjamanController::class, 'create'])->name('peminjaman.create');
@@ -86,7 +93,6 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin'], function () {
     Route::post('/peminjaman/{id}/update', [PeminjamanController::class, 'update'])->name('peminjaman.update');
     Route::delete('/peminjaman/{id_peminjaman}/delete', [PeminjamanController::class, 'delete'])->name('peminjaman.delete');
 
-    // BARU: admin setujui / tolak pengajuan
     Route::post('/peminjaman/{id}/setujui', [PeminjamanController::class, 'setujui'])->name('peminjaman.setujui');
     Route::post('/peminjaman/{id}/tolak', [PeminjamanController::class, 'tolak'])->name('peminjaman.tolak');
 
@@ -97,7 +103,7 @@ Route::group(['prefix' => 'admin', 'middleware' => 'admin'], function () {
     Route::post('/pengembalian/{id}/update', [PengembalianController::class, 'update'])->name('pengembalian.update');
     Route::post('/pengembalian/{id}/delete', [PengembalianController::class, 'delete'])->name('pengembalian.delete');
 
-    });
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -125,21 +131,3 @@ Route::group(['prefix' => 'pengguna', 'middleware' => 'pengguna'], function () {
 });
 // @role:pengguna:end
 // @generated-roles:end
-
-/*
-|--------------------------------------------------------------------------
-| Contoh (hapus/ubah sesuai kebutuhan)
-|--------------------------------------------------------------------------
-|
-| use App\Controllers\BukuController;
-|
-| Route::get('/buku', [BukuController::class, 'index'])->name('buku.index');
-|
-| // Tujuh route CRUD sekaligus: index, create, store, show, edit, update, destroy
-| // Route::resource
-|
-| // Group dengan prefix dan middleware bersama
-| Route::group(['prefix' => 'admin', 'middleware' => 'auth'], function () {
-|     Route::get('/dashboard', [DashboardController::class, 'index']);
-| });
-*/

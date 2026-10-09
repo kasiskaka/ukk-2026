@@ -145,4 +145,18 @@ class PeminjamanController extends Controller
 
         return redirect(route('peminjaman.index'))->with('success', 'Peminjaman ditolak.');
     }
+
+    // ===================== BARU: riwayat peminjaman =====================
+
+    public function riwayat(Request $request)
+    {
+        $user = User::current();
+
+        // Mengambil riwayat peminjaman khusus milik user yang sedang login
+        $datap = Peminjaman::where('id_user', $user->id)
+            ->orderBy('id_peminjaman', 'desc')
+            ->paginate(10);
+
+        return view('peminjaman.riwayat', compact('datap'));
+    }
 }

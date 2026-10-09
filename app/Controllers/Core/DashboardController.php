@@ -13,6 +13,12 @@ class DashboardController extends Controller
     {
         $user = User::current();
 
+        if ($user->role === 'admin') {
+            return redirect('/admin');
+        } elseif ($user->role === 'petugas') {
+            return redirect('/petugas');
+        }
+
         $peminjamanSaya = Peminjaman::where('id_user', $user->id)
             ->orderBy('id_peminjaman', 'desc')
             ->get();
@@ -31,5 +37,21 @@ class DashboardController extends Controller
     public function admin()
     {
         return view('core.admin.dashboard', ['user' => User::current()]);
+    }
+
+    public function petugas()
+    {
+        $user = User::current();
+
+        $totalPending   = Peminjaman::where('status', 'Pending')->count();
+        $totalDisetujui = Peminjaman::where('status', 'Disetujui')->count();
+        $totalAlat      = Alat::count();
+
+        return view('core.petugas.dashboard', [
+            'user'           => $user,
+            'totalPending'   => $totalPending,
+            'totalDisetujui' => $totalDisetujui,
+            'totalAlat'      => $totalAlat,
+        ]);
     }
 }
