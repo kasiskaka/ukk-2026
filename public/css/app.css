@@ -775,3 +775,8 @@ code.inline {
         border-radius: 14px;
     }
 }
+
+.page-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+}

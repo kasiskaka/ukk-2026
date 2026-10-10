@@ -9,15 +9,19 @@ use Sakuci\Controller;
 
 class DashboardController extends Controller
 {
-    public function index()
-    {
-        $user = User::current();
+   public function index()
+{
+    $user = User::current();
 
-        if ($user->role === 'admin') {
-            return redirect('/admin');
-        } elseif ($user->role === 'petugas') {
-            return redirect('/petugas');
-        }
+    if ($user->role === 'admin') {
+        return redirect('/admin');
+    }
+
+    if ($user->role === 'petugas') {
+        return $this->petugas();
+    }
+
+    // ... sisanya (peminjamanSaya, return view) tetap sama
 
         $peminjamanSaya = Peminjaman::where('id_user', $user->id)
             ->orderBy('id_peminjaman', 'desc')
