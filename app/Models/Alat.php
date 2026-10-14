@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Sakuci\Database\Model;
+use App\Traits\LogsActivity;
 
 class Alat extends Model
 {
+    use LogsActivity;
+
     protected static ?string $table = 'alat';
 
     protected string $primaryKey = 'id_alat';

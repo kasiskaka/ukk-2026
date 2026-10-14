@@ -11,6 +11,7 @@ use App\Controllers\AlatController;
 use App\Controllers\PeminjamanController;
 use App\Controllers\PeminjamPortalController;
 use App\Controllers\PengembalianController;
+use App\Controllers\ActivityLogController; // <-- BARU
 
 use Sakuci\Route;
 
@@ -73,6 +74,10 @@ Route::group(['prefix' => 'admin', 'middleware' => 'auth'], function () {
     Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('admin.users.destroy');
 
     Route::get('/database/export', [DatabaseController::class, 'export'])->name('admin.database.export');
+
+    // Log aktivitas
+    Route::get('/log-aktivitas', [ActivityLogController::class, 'index'])->name('admin.log.index'); // <-- BARU
+
     Route::get('/kategori/create',[KategoriController::class, 'create'])->name('kategori.create');
     Route::post('/kategori',[KategoriController::class, 'store'])->name('kategori.store');
     Route::get('/kategori/{id_kategori}/edit',[KategoriController::class, 'edit'])->name('kategori.edit');

@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS activity_logs (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NULL,
+    action VARCHAR(20) NOT NULL,
+    model VARCHAR(100) NOT NULL,
+    model_id BIGINT UNSIGNED NULL,
+    old_values TEXT NULL,
+    new_values TEXT NULL,
+    ip_address VARCHAR(45) NULL,
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+);
