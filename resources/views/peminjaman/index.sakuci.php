@@ -86,6 +86,8 @@
     .pm-page .btn-aksi-edit:hover{ background:var(--pm-gold); color:var(--pm-ink); }
     .pm-page .btn-aksi-del{ color:var(--pm-rose); border:1px solid rgba(232,160,187,.5); background:transparent; border-radius:.6rem; font-size:.8rem; padding:.35rem .75rem; }
     .pm-page .btn-aksi-del:hover{ background:var(--pm-rose); color:var(--pm-ink); }
+    .pm-page .btn-aksi-back{ color:#a6dcc3; border:1px solid rgba(80,180,130,.5); background:transparent; border-radius:.6rem; font-size:.8rem; padding:.35rem .75rem; }
+    .pm-page .btn-aksi-back:hover{ background:#a6dcc3; color:var(--pm-ink); }
 
     /* Pagination */
     .pm-page .pagination{ margin:0; }
@@ -151,7 +153,7 @@
                         <th class="py-3 px-3">Tgl Kembali</th>
                         <th class="py-3 px-3">Status</th>
                         <th class="py-3 px-3">Denda</th>
-                        <th class="py-3 px-4 text-center" style="width: 180px;">Aksi</th>
+                        <th class="py-3 px-4 text-center" style="width: 330px;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -165,7 +167,7 @@
                             <div class="d-flex align-items-center gap-2">
                                 <span class="pm-avatar"><i class="bi bi-person-fill"></i></span>
                                 <span class="pm-strong">
-                                    {{ $peminjaman->user->nama ?? 'User ID: ' . $peminjaman->id_user }}
+                                    {{ $namaUser[$peminjaman->id_user] ?? 'User ID: ' . $peminjaman->id_user }}
                                 </span>
                             </div>
                         </td>
@@ -173,7 +175,7 @@
                         <!-- Nama Alat -->
                         <td class="px-3">
                             <span class="pm-strong">
-                                {{ $peminjaman->alat->nama_alat ?? 'Alat ID: ' . $peminjaman->id_alat }}
+                                {{ $namaAlat[$peminjaman->id_alat] ?? 'Alat ID: ' . $peminjaman->id_alat }}
                             </span>
                         </td>
 
@@ -231,6 +233,16 @@
                                     <i class="bi bi-pencil-square"></i> Edit
                                 </a>
 
+                                {{-- BARU: tombol Kembalikan, hanya untuk peminjaman yang sedang berjalan --}}
+                                @if(in_array($peminjaman->status, ['Disetujui', 'Dipinjam']))
+                                <form action="{{ route('peminjaman.kembalikan', ['id' => $peminjaman->id_peminjaman]) }}" method="POST" class="d-inline m-0">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-aksi-back d-inline-flex align-items-center gap-1" onclick="return confirm('Tandai alat ini sudah dikembalikan?')" title="Kembalikan Alat">
+                                        <i class="bi bi-arrow-return-left"></i> Kembalikan
+                                    </button>
+                                </form>
+                                @endif
+
                                 <form action="{{ route('peminjaman.delete', ['id_peminjaman' => $peminjaman->id_peminjaman]) }}" method="POST" class="d-inline m-0">
                                     @csrf
                                     @method('DELETE')
@@ -272,6 +284,11 @@
         // Murni PHP biasa (tanpa collect / Carbon). Dibungkus try/catch: kalau gagal,
         // bagian tambahan tidak tampil, tabel asli tetap normal.
         $pmOk = true;
+
+        // Hanya petugas yang boleh mencetak laporan (admin tidak)
+        $pmCurUser = \App\Models\User::current();
+        $pmBolehCetak = $pmCurUser && $pmCurUser->role === 'petugas';
+
         try {
             $pmToday = strtotime(date('Y-m-d'));
             $pmItems = [];
@@ -293,8 +310,9 @@
                 $t = strtotime($v);
                 return $t ? strtotime(date('Y-m-d', $t)) : null;
             };
-            $pmNama = function ($p) { return isset($p->alat->nama_alat) ? $p->alat->nama_alat : ('Alat ID: ' . $p->id_alat); };
-            $pmUser = function ($p) { return isset($p->user->nama) ? $p->user->nama : ('User ID: ' . $p->id_user); };
+            // DIUBAH: nama alat & nama peminjam diambil dari daftar yang dikirim controller
+            $pmNama = function ($p) use ($namaAlat) { return isset($namaAlat[$p->id_alat]) ? $namaAlat[$p->id_alat] : ('Alat ID: ' . $p->id_alat); };
+            $pmUser = function ($p) use ($namaUser) { return isset($namaUser[$p->id_user]) ? $namaUser[$p->id_user] : ('User ID: ' . $p->id_user); };
 
             // Info jatuh tempo: kelas warna, teks, sisa hari, progres waktu (%)
             $pmDueInfo = function ($p) use ($pmTs, $pmToday) {
@@ -519,7 +537,10 @@
             <div>
                 <h4>Pusat Catatan &amp; Laporan Peminjaman</h4>
                 <p>Catatan peminjaman, pengembalian, jatuh tempo, rekap riwayat, alat terpopuler, dan keterlambatan.</p>
+                {{-- Tombol cetak hanya untuk petugas (admin tidak) --}}
+                @if($pmBolehCetak)
                 <button type="button" class="pm-btn pm-noprint" onclick="window.print()"><i class="bi bi-printer me-1"></i> Cetak Laporan</button>
+                @endif
             </div>
             <div class="pm-fl"><span><i class="bi bi-laptop"></i></span><span><i class="bi bi-router"></i></span><span><i class="bi bi-ethernet"></i></span></div>
         </div>

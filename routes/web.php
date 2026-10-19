@@ -57,6 +57,10 @@ Route::post('/peminjaman/ajukan', [PeminjamanController::class, 'simpan'])->name
 // Rute riwayat peminjaman (agar tidak error 404)
 Route::get('/riwayat-peminjaman', [PeminjamanController::class, 'riwayat'])->name('peminjaman.riwayat')->middleware('auth');
 
+// BARU: pengembalian oleh peminjam (hanya peminjaman miliknya sendiri)
+Route::get('/pengembalian-saya', [PeminjamanController::class, 'pengembalian'])->name('peminjaman.pengembalian')->middleware('auth');
+Route::post('/pengembalian-saya/{id}/kembalikan', [PeminjamanController::class, 'kembalikanSaya'])->name('peminjaman.kembalikanSaya')->middleware('auth');
+
 // Grup admin dengan middleware auth (bebas akses asal sudah login)
 Route::group(['prefix' => 'admin', 'middleware' => 'auth'], function () {
     Route::get('/', [DashboardController::class, 'admin'])->name('admin.dashboard');
@@ -100,6 +104,16 @@ Route::group(['prefix' => 'admin', 'middleware' => 'auth'], function () {
 
     Route::post('/peminjaman/{id}/setujui', [PeminjamanController::class, 'setujui'])->name('peminjaman.setujui');
     Route::post('/peminjaman/{id}/tolak', [PeminjamanController::class, 'tolak'])->name('peminjaman.tolak');
+    Route::post('/peminjaman/{id}/kembalikan', [PeminjamanController::class, 'kembalikan'])->name('peminjaman.kembalikan'); // <-- BARU
+
+    // BARU: halaman persetujuan (pengajuan Pending)
+    Route::get('/persetujuan', [PeminjamanController::class, 'persetujuan'])->name('peminjaman.persetujuan');
+
+    // BARU: halaman pemantauan (alat yang sedang dipinjam)
+    Route::get('/pemantauan', [PeminjamanController::class, 'pemantauan'])->name('peminjaman.pemantauan');
+
+    // BARU: cetak laporan pemantauan
+    Route::get('/pemantauan/cetak', [PeminjamanController::class, 'cetakPemantauan'])->name('peminjaman.pemantauan.cetak');
 
     Route::get('/pengembalian', [PengembalianController::class, 'index'])->name('pengembalian.index');
     Route::get('/pengembalian/create', [PengembalianController::class, 'create'])->name('pengembalian.create');

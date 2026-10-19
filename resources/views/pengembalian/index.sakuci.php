@@ -11,16 +11,18 @@
 <?php
     // Hitung ringkasan (PHP sederhana, hanya membaca $datap)
     $pmToday = strtotime(date('Y-m-d'));
+    $pmLamaPinjam = 3; // samakan dengan LAMA_PINJAM_HARI di PeminjamanController
     $pmBelum = 0; $pmSudah = 0; $pmTelat = 0; $pmDenda = 0;
     $pmDaftar = array();
     foreach ($datap as $pmx) {
         $pmDenda += (int) $pmx->denda;
-        if ($pmx->status == 'Dipinjam') {
+        if (in_array($pmx->status, ['Disetujui', 'Dipinjam'])) {
             $pmBelum++;
-            $pmDue = $pmx->tanggal_kembali ? strtotime($pmx->tanggal_kembali) : false;
+            // jatuh tempo = tanggal pinjam + lama pinjam
+            $pmDue = $pmx->tanggal_pinjam ? strtotime($pmx->tanggal_pinjam . ' +' . $pmLamaPinjam . ' days') : false;
             $pmSisa = $pmDue ? (int) round(($pmDue - $pmToday) / 86400) : null;
             if ($pmSisa !== null && $pmSisa < 0) { $pmTelat++; }
-            $pmDaftar[] = array($pmx, $pmSisa);
+            $pmDaftar[] = array($pmx, $pmSisa, $pmDue);
         }
         if ($pmx->status == 'Dikembalikan') { $pmSudah++; }
     }
@@ -52,14 +54,9 @@
     .pm-h1{ font-family:'Playfair Display',Georgia,serif; font-weight:700; font-size:1.9rem; color:var(--pm-text); margin:.5rem 0 .35rem; letter-spacing:.01em; }
     .pm-sub{ color:var(--pm-muted); font-size:.9rem; margin:0; }
 
-    .pm-page .btn-pm{
-        background:linear-gradient(135deg,var(--pm-gold),var(--pm-gold-d)); border:0; color:var(--pm-ink);
-        font-weight:700; border-radius:.75rem; padding:.6rem 1.1rem; transition:filter .2s, background .2s;
-    }
-    .pm-page .btn-pm:hover{ background:linear-gradient(135deg,var(--pm-rose),var(--pm-rose-d)); color:var(--pm-ink); }
-
     /* Alert */
     .pm-alert{ background:rgba(80,180,130,.12); border:1px solid rgba(80,180,130,.35); color:#bfe8d3; border-radius:.9rem; padding:.8rem 1rem; }
+    .pm-alert-err{ background:rgba(220,80,100,.12); border:1px solid rgba(220,80,100,.35); color:#ffb3c0; border-radius:.9rem; padding:.8rem 1rem; }
 
     /* Ringkasan */
     .pm-box{
@@ -113,8 +110,6 @@
     /* Tombol aksi */
     .pm-page .btn-aksi-edit{ color:var(--pm-gold); border:1px solid rgba(227,192,108,.5); background:transparent; border-radius:.6rem; font-size:.8rem; padding:.35rem .75rem; }
     .pm-page .btn-aksi-edit:hover{ background:var(--pm-gold); color:var(--pm-ink); }
-    .pm-page .btn-aksi-del{ color:var(--pm-rose); border:1px solid rgba(232,160,187,.5); background:transparent; border-radius:.6rem; font-size:.8rem; padding:.35rem .75rem; }
-    .pm-page .btn-aksi-del:hover{ background:var(--pm-rose); color:var(--pm-ink); }
 
     /* Pagination */
     .pm-page .pagination{ margin:0; }
@@ -141,25 +136,29 @@
 
 <div class="container-fluid py-4 px-4 pm-page">
 
-    <!-- Header Halaman & Tombol Tambah -->
-    <div class="pm-head d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
-        <div>
-            <span class="pm-chip"><i class="bi bi-box-seam"></i> Transaksi Pengembalian</span>
-            <h3 class="pm-h1">Daftar Pengembalian Alat</h3>
-            <p class="pm-sub">Kelola riwayat permohonan, status persetujuan, dan jadwal peminjaman alat sarpras.</p>
-        </div>
-        <a href="{{ route('peminjaman.create') }}" class="btn btn-pm d-inline-flex align-items-center gap-2">
-            <i class="bi bi-plus-circle-fill"></i>
-            <span>Tambah Pengembalian Baru</span>
-        </a>
+    <!-- Header Halaman -->
+    <div class="pm-head mb-4">
+        <span class="pm-chip"><i class="bi bi-box-seam"></i> Transaksi Pengembalian</span>
+        <h3 class="pm-h1">Daftar Pengembalian Alat</h3>
+        <p class="pm-sub">Konfirmasi alat yang sudah dikembalikan peminjam dan pantau jadwal jatuh tempo.</p>
     </div>
 
-    <!-- Alert Notifikasi Sukses -->
+    <!-- Alert Notifikasi -->
     @if(session('success'))
         <div class="alert pm-alert alert-dismissible fade show mb-4" role="alert">
             <div class="d-flex align-items-center gap-2">
                 <i class="bi bi-check-circle-fill fs-5"></i>
                 <div class="small fw-medium">{{ session('success') }}</div>
+            </div>
+            <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert pm-alert-err alert-dismissible fade show mb-4" role="alert">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-exclamation-circle-fill fs-5"></i>
+                <div class="small fw-medium">{{ session('error') }}</div>
             </div>
             <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
@@ -180,7 +179,7 @@
         <div class="pm-panelx-head">
             <div class="d-flex align-items-center gap-2">
                 <i class="bi bi-list-check fs-5"></i>
-                <h6>Data Pengembalian Aktif</h6>
+                <h6>Data Pengembalian</h6>
             </div>
             <span class="pm-pill">Total: {{ count($datap) }} Data</span>
         </div>
@@ -197,7 +196,7 @@
                         <th class="py-3 px-3">Tgl Kembali</th>
                         <th class="py-3 px-3">Status</th>
                         <th class="py-3 px-3">Denda</th>
-                        <th class="py-3 px-4 text-center" style="width: 180px;">Aksi</th>
+                        <th class="py-3 px-4 text-center" style="width: 200px;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -246,10 +245,12 @@
                             </span>
                         </td>
 
-                        <!-- Status Peminjaman -->
+                        <!-- Status -->
                         <td class="px-3">
                             @if($peminjaman->status == 'Pending')
                                 <span class="pm-st pending"><i class="bi bi-hourglass-split"></i>Pending</span>
+                            @elseif($peminjaman->status == 'Disetujui' && $peminjaman->tanggal_kembali)
+                                <span class="pm-st pending"><i class="bi bi-hourglass-split"></i>Menunggu konfirmasi</span>
                             @elseif($peminjaman->status == 'Disetujui')
                                 <span class="pm-st setuju"><i class="bi bi-check2-circle"></i>Disetujui</span>
                             @elseif($peminjaman->status == 'Ditolak')
@@ -272,19 +273,18 @@
 
                         <!-- Aksi -->
                         <td class="px-4 text-center">
-                            <div class="d-inline-flex align-items-center justify-content-center gap-2">
-                                <a href="{{ route('peminjaman.edit', ['id_peminjaman' => $peminjaman->id_peminjaman]) }}" class="btn btn-sm btn-aksi-edit d-inline-flex align-items-center gap-1" title="Edit Peminjaman">
-                                    <i class="bi bi-pencil-square"></i> Edit
-                                </a>
-
-                                <form action="{{ route('peminjaman.delete', ['id_peminjaman' => $peminjaman->id_peminjaman]) }}" method="POST" class="d-inline m-0">
+                            @if(strtolower((string) $peminjaman->status) == 'disetujui')
+                                <form action="/admin/peminjaman/{{ $peminjaman->id_peminjaman }}/kembalikan" method="POST" class="d-inline m-0"
+                                      onsubmit="return confirm('Konfirmasi alat ini sudah dikembalikan?');">
                                     @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-aksi-del d-inline-flex align-items-center gap-1" onclick="return confirm('Apakah Anda yakin ingin menghapus data peminjaman ini?')" title="Hapus Data">
-                                        <i class="bi bi-trash"></i> Hapus
+                                    <button type="submit" class="btn btn-sm btn-aksi-edit d-inline-flex align-items-center gap-1">
+                                        <i class="bi bi-check2-circle"></i>
+                                        {{ $peminjaman->tanggal_kembali ? 'Konfirmasi (diajukan)' : 'Konfirmasi' }}
                                     </button>
                                 </form>
-                            </div>
+                            @else
+                                <span class="pm-muted">-</span>
+                            @endif
                         </td>
                     </tr>
                     @empty
@@ -292,8 +292,8 @@
                         <td colspan="9">
                             <div class="pm-empty-box">
                                 <div class="pm-ring"><i class="bi bi-inbox"></i></div>
-                                <h6 class="mb-1">Belum Ada Data Peminjaman</h6>
-                                <span class="small">Data peminjaman alat yang diajukan akan muncul di sini.</span>
+                                <h6 class="mb-1">Belum Ada Data</h6>
+                                <span class="small">Data peminjaman alat akan muncul di sini.</span>
                             </div>
                         </td>
                     </tr>
@@ -325,7 +325,7 @@
                         <td class="px-3">{{ $row[0]->alat->nama_alat ?? 'Alat ID: ' . $row[0]->id_alat }}</td>
                         <td class="px-3">{{ $row[0]->jumlah }} Unit</td>
                         <td class="px-3 pm-muted">{{ $row[0]->tanggal_pinjam }}</td>
-                        <td class="px-3 pm-muted">{{ $row[0]->tanggal_kembali ? $row[0]->tanggal_kembali : '-' }}</td>
+                        <td class="px-3 pm-muted">{{ $row[2] ? date('Y-m-d', $row[2]) : '-' }}</td>
                         <td class="px-3">
                             @if($row[1] === null)
                                 <span class="pm-tag ok">Tanpa tenggat</span>

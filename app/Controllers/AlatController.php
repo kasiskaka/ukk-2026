@@ -5,6 +5,7 @@ namespace App\Controllers;
 use Sakuci\Controller;
 use Sakuci\Http\Request;
 use App\Models\Alat;
+use App\Models\ActivityLog;
 
 class alatController extends Controller
 {
@@ -23,7 +24,17 @@ class alatController extends Controller
             'nama_alat' => 'required|min:3|max:100',
             'kode_alat' => 'required|varchar|min:3|max:100',
         ]);
-        alat::create($datal);
+        $alat = alat::create($datal);
+
+        ActivityLog::catat(
+            'Menambah alat',
+            'Menambahkan alat "' . $datal['nama_alat'] . '" dengan kode "' . $datal['kode_alat'] . '".',
+            'alat',
+            $alat->id_alat ?? null,
+            null,
+            ['nama_alat' => $datal['nama_alat'], 'kode_alat' => $datal['kode_alat']]
+        );
+
         return redirect(route('alat.index'))->with('success', 'Alat berhasil ditambahkan.');
     }
 
@@ -38,13 +49,39 @@ class alatController extends Controller
         $datal = $request->all();
 
         $alat = alat::FindOrfail($id_alat);
+
+        // simpan data lama dulu sebelum diubah
+        $lama = ['nama_alat' => $alat->nama_alat, 'kode_alat' => $alat->kode_alat];
+
         $alat->update($datal);
+
+        ActivityLog::catat(
+            'Mengubah alat',
+            'Mengubah alat "' . $lama['nama_alat'] . '" (kode "' . $lama['kode_alat'] . '") menjadi "' . $alat->nama_alat . '" (kode "' . $alat->kode_alat . '").',
+            'alat',
+            $id_alat,
+            $lama,
+            ['nama_alat' => $alat->nama_alat, 'kode_alat' => $alat->kode_alat]
+        );
+
         return redirect(route('alat.index'))->with('success', 'alat berhasil diubah');
     }
    public function delete(Request $request, $id_alat)
     {
         $alat = alat::findOrFail($id_alat);
+
+        // ambil nama dulu sebelum dihapus
+        $nama = $alat->nama_alat;
+        $kode = $alat->kode_alat;
+
         $alat->delete();
+
+        ActivityLog::catat(
+            'Menghapus alat',
+            'Menghapus alat "' . $nama . '" dengan kode "' . $kode . '".',
+            'alat',
+            $id_alat
+        );
 
         return redirect()->route('alat.index')->with('success', 'alat berhasil dihapus.');
     }

@@ -3,11 +3,13 @@
 @php
     $currentUser = \App\Models\User::current();
     $isAdmin = $currentUser && $currentUser->role === 'admin';
+    // admin dan petugas sama-sama pengelola (boleh kelola peminjaman & pengembalian)
+    $isPengelola = $currentUser && in_array($currentUser->role, ['admin', 'petugas']);
 
     // Hitung pengajuan Pending untuk notifikasi admin
     $pendingCount = 0;
 
-    if ($isAdmin) {
+    if ($isPengelola) {
         foreach (\App\Models\Peminjaman::all() as $pn) {
             if (strtolower($pn->status) === 'pending') {
                 $pendingCount++;
@@ -264,8 +266,9 @@
             <!-- Menu -->
             <ul class="nav nav-pills flex-column gap-1">
 
-                @if ($isAdmin)
+                @if ($isPengelola)
 
+                    @if ($isAdmin)
                     <li class="nav-item">
                         <a class="nav-link {{ is_route('home') ? 'active' : '' }}"
                            href="{{ route('home') }}">Beranda</a>
@@ -275,12 +278,15 @@
                         <a class="nav-link {{ is_route('kategori.index') ? 'active' : '' }}"
                            href="{{ route('kategori.index') }}">Kategori</a>
                     </li>
+                    @endif
 
                     <li class="nav-item">
                         <a class="nav-link {{ is_route('alat') ? 'active' : '' }}"
                            href="{{ route('alat.index') }}">Daftar alat</a>
                     </li>
 
+                    {{-- Peminjaman: khusus admin (di sini admin mengembalikan alat yang dipinjam) --}}
+                    @if ($isAdmin)
                     <li class="nav-item">
                         <a class="nav-link {{ is_route('peminjaman') ? 'active' : '' }}"
                            href="{{ route('peminjaman.index') }}">
@@ -293,22 +299,33 @@
                             @endif
                         </a>
                     </li>
+                    @endif
+
+                    <li class="nav-item">
+                        <a class="nav-link {{ is_route('peminjaman.persetujuan') ? 'active' : '' }}"
+                           href="{{ route('peminjaman.persetujuan') }}">Persetujuan</a>
+                    </li>
+
+                    {{-- Pemantauan: khusus petugas (admin tidak melihat menu ini) --}}
+                    @if ($currentUser->role === 'petugas')
+                    <li class="nav-item">
+                        <a class="nav-link {{ is_route('peminjaman.pemantauan') ? 'active' : '' }}"
+                           href="{{ route('peminjaman.pemantauan') }}">Pemantauan</a>
+                    </li>
+                    @endif
 
                     <li class="nav-item">
                         <a class="nav-link {{ is_route('pengembalian') ? 'active' : '' }}"
                            href="{{ route('pengembalian.index') }}">Pengembalian</a>
                     </li>
 
-                    <li class="nav-item">
-                        <a class="nav-link"
-                           href="/riwayat-peminjaman">Riwayat peminjaman</a>
-                    </li>
-
                     {{-- BARU: menu log aktivitas (khusus admin) --}}
+                    @if ($isAdmin)
                     <li class="nav-item">
                         <a class="nav-link {{ is_route('admin.log') ? 'active' : '' }}"
                            href="{{ route('admin.log.index') }}">Log aktivitas</a>
                     </li>
+                    @endif
 
                 @endif
 
@@ -324,16 +341,17 @@
                            href="{{ $isAdmin ? route('admin.dashboard') : route('dashboard') }}">Dashboard</a>
                     </li>
 
-                    @if (! $isAdmin)
+                    @if (! $isPengelola)
 
                         <li class="nav-item">
                             <a class="nav-link {{ is_route('peminjaman.katalog', 'peminjaman.ajukan') ? 'active' : '' }}"
                                href="{{ route('peminjaman.katalog') }}">Ajukan peminjaman</a>
                         </li>
 
+                        {{-- DIPERBARUI: peminjam diarahkan ke halaman pengembalian miliknya sendiri --}}
                         <li class="nav-item">
-                            <a class="nav-link {{ is_route('pengembalian') ? 'active' : '' }}"
-                               href="{{ route('pengembalian.index') }}">Pengembalian</a>
+                            <a class="nav-link {{ is_route('peminjaman.pengembalian') ? 'active' : '' }}"
+                               href="/pengembalian-saya">Pengembalian</a>
                         </li>
 
                         <li class="nav-item">
