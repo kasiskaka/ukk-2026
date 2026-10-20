@@ -3,7 +3,7 @@
 @php
     $currentUser = \App\Models\User::current();
     $isAdmin = $currentUser && $currentUser->role === 'admin';
-    // admin dan petugas sama-sama pengelola (boleh kelola peminjaman & pengembalian)
+    // admin dan petugas sama-sama pengelola (boleh kelola peminjaman)
     $isPengelola = $currentUser && in_array($currentUser->role, ['admin', 'petugas']);
 
     // Hitung pengajuan Pending untuk notifikasi admin
@@ -285,12 +285,25 @@
                            href="{{ route('alat.index') }}">Daftar alat</a>
                     </li>
 
-                    {{-- Peminjaman: khusus admin (di sini admin mengembalikan alat yang dipinjam) --}}
+                    {{-- Peminjaman & Pengembalian (CRUD): khusus admin --}}
                     @if ($isAdmin)
                     <li class="nav-item">
                         <a class="nav-link {{ is_route('peminjaman') ? 'active' : '' }}"
-                           href="{{ route('peminjaman.index') }}">
-                            Peminjaman
+                           href="{{ route('peminjaman.index') }}">Peminjaman</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link {{ is_route('pengembalian') ? 'active' : '' }}"
+                           href="{{ route('pengembalian.index') }}">Pengembalian</a>
+                    </li>
+                    @endif
+
+                    {{-- Persetujuan, Pemantauan & Cetak Laporan: khusus petugas --}}
+                    @if ($currentUser->role === 'petugas')
+                    <li class="nav-item">
+                        <a class="nav-link {{ is_route('peminjaman.persetujuan') ? 'active' : '' }}"
+                           href="{{ route('peminjaman.persetujuan') }}">
+                            Persetujuan
 
                             @if ($pendingCount > 0)
                                 <span class="badge rounded-pill bg-danger ms-1 badge-notif">
@@ -299,25 +312,18 @@
                             @endif
                         </a>
                     </li>
-                    @endif
 
-                    <li class="nav-item">
-                        <a class="nav-link {{ is_route('peminjaman.persetujuan') ? 'active' : '' }}"
-                           href="{{ route('peminjaman.persetujuan') }}">Persetujuan</a>
-                    </li>
-
-                    {{-- Pemantauan: khusus petugas (admin tidak melihat menu ini) --}}
-                    @if ($currentUser->role === 'petugas')
                     <li class="nav-item">
                         <a class="nav-link {{ is_route('peminjaman.pemantauan') ? 'active' : '' }}"
                            href="{{ route('peminjaman.pemantauan') }}">Pemantauan</a>
                     </li>
-                    @endif
 
                     <li class="nav-item">
-                        <a class="nav-link {{ is_route('pengembalian') ? 'active' : '' }}"
-                           href="{{ route('pengembalian.index') }}">Pengembalian</a>
+                        <a class="nav-link {{ is_route('peminjaman.pemantauan.cetak') ? 'active' : '' }}"
+                           href="{{ route('peminjaman.pemantauan.cetak') }}"
+                           target="_blank">Cetak Laporan</a>
                     </li>
+                    @endif
 
                     {{-- BARU: menu log aktivitas (khusus admin) --}}
                     @if ($isAdmin)
@@ -345,7 +351,7 @@
 
                         <li class="nav-item">
                             <a class="nav-link {{ is_route('peminjaman.katalog', 'peminjaman.ajukan') ? 'active' : '' }}"
-                               href="{{ route('peminjaman.katalog') }}">Ajukan peminjaman</a>
+                               href="{{ route('peminjaman.katalog') }}">Katalog alat</a>
                         </li>
 
                         {{-- DIPERBARUI: peminjam diarahkan ke halaman pengembalian miliknya sendiri --}}

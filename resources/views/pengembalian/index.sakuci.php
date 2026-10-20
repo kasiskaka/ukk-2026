@@ -110,6 +110,10 @@
     /* Tombol aksi */
     .pm-page .btn-aksi-edit{ color:var(--pm-gold); border:1px solid rgba(227,192,108,.5); background:transparent; border-radius:.6rem; font-size:.8rem; padding:.35rem .75rem; }
     .pm-page .btn-aksi-edit:hover{ background:var(--pm-gold); color:var(--pm-ink); }
+    .pm-page .btn-aksi-hapus{ color:var(--pm-rose); border:1px solid rgba(232,160,187,.5); background:transparent; border-radius:.6rem; font-size:.8rem; padding:.35rem .75rem; }
+    .pm-page .btn-aksi-hapus:hover{ background:var(--pm-rose-d); border-color:var(--pm-rose-d); color:var(--pm-ink); }
+    .pm-page .btn-tambah{ color:var(--pm-ink); background:var(--pm-gold); border:1px solid var(--pm-gold); border-radius:.6rem; font-size:.8rem; font-weight:700; padding:.4rem .9rem; text-decoration:none; }
+    .pm-page .btn-tambah:hover{ background:var(--pm-gold-d); border-color:var(--pm-gold-d); color:var(--pm-ink); }
 
     /* Pagination */
     .pm-page .pagination{ margin:0; }
@@ -181,7 +185,12 @@
                 <i class="bi bi-list-check fs-5"></i>
                 <h6>Data Pengembalian</h6>
             </div>
-            <span class="pm-pill">Total: {{ count($datap) }} Data</span>
+            <div class="d-flex align-items-center gap-2">
+                <span class="pm-pill">Total: {{ count($datap) }} Data</span>
+                <a href="/admin/pengembalian/create" class="btn-tambah d-inline-flex align-items-center gap-1">
+                    <i class="bi bi-plus-lg"></i> Tambah Data
+                </a>
+            </div>
         </div>
 
         <div class="table-responsive">
@@ -196,7 +205,7 @@
                         <th class="py-3 px-3">Tgl Kembali</th>
                         <th class="py-3 px-3">Status</th>
                         <th class="py-3 px-3">Denda</th>
-                        <th class="py-3 px-4 text-center" style="width: 200px;">Aksi</th>
+                        <th class="py-3 px-4 text-center">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -210,7 +219,7 @@
                             <div class="d-flex align-items-center gap-2">
                                 <span class="pm-avatar"><i class="bi bi-person-fill"></i></span>
                                 <span class="pm-strong">
-                                    {{ $peminjaman->user->nama ?? 'User ID: ' . $peminjaman->id_user }}
+                                    {{ $namaUser[$peminjaman->id_user] ?? ('User ID: ' . $peminjaman->id_user) }}
                                 </span>
                             </div>
                         </td>
@@ -218,7 +227,7 @@
                         <!-- Nama Alat -->
                         <td class="px-3">
                             <span class="pm-strong">
-                                {{ $peminjaman->alat->nama_alat ?? 'Alat ID: ' . $peminjaman->id_alat }}
+                                {{ $namaAlat[$peminjaman->id_alat] ?? ('Alat ID: ' . $peminjaman->id_alat) }}
                             </span>
                         </td>
 
@@ -247,9 +256,9 @@
 
                         <!-- Status -->
                         <td class="px-3">
-                            @if($peminjaman->status == 'Pending')
+                            @if($peminjaman->status == 'Pending' && !$peminjaman->tanggal_kembali)
                                 <span class="pm-st pending"><i class="bi bi-hourglass-split"></i>Pending</span>
-                            @elseif($peminjaman->status == 'Disetujui' && $peminjaman->tanggal_kembali)
+                            @elseif(($peminjaman->status == 'Disetujui' || $peminjaman->status == 'Pending') && $peminjaman->tanggal_kembali)
                                 <span class="pm-st pending"><i class="bi bi-hourglass-split"></i>Menunggu konfirmasi</span>
                             @elseif($peminjaman->status == 'Disetujui')
                                 <span class="pm-st setuju"><i class="bi bi-check2-circle"></i>Disetujui</span>
@@ -271,20 +280,35 @@
                             @endif
                         </td>
 
-                        <!-- Aksi -->
+                        <!-- Aksi: Konfirmasi (kalau masih dipinjam), Edit, Hapus -->
                         <td class="px-4 text-center">
-                            @if(strtolower((string) $peminjaman->status) == 'disetujui')
-                                <form action="/admin/peminjaman/{{ $peminjaman->id_peminjaman }}/kembalikan" method="POST" class="d-inline m-0"
-                                      onsubmit="return confirm('Konfirmasi alat ini sudah dikembalikan?');">
+                            <div class="d-inline-flex align-items-center gap-2">
+
+                                @if(strtolower((string) $peminjaman->status) == 'disetujui' || (strtolower((string) $peminjaman->status) == 'pending' && $peminjaman->tanggal_kembali))
+                                    <form action="/admin/peminjaman/{{ $peminjaman->id_peminjaman }}/kembalikan" method="POST" class="d-inline m-0"
+                                          onsubmit="return confirm('Konfirmasi alat ini sudah dikembalikan?');">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-aksi-edit d-inline-flex align-items-center gap-1">
+                                            <i class="bi bi-check2-circle"></i>
+                                            {{ $peminjaman->tanggal_kembali ? 'Konfirmasi (diajukan)' : 'Konfirmasi' }}
+                                        </button>
+                                    </form>
+                                @endif
+
+                                <a href="/admin/pengembalian/{{ $peminjaman->id_peminjaman }}/edit"
+                                   class="btn btn-sm btn-aksi-edit d-inline-flex align-items-center gap-1">
+                                    <i class="bi bi-pencil-square"></i> Edit
+                                </a>
+
+                                <form action="/admin/pengembalian/{{ $peminjaman->id_peminjaman }}/delete" method="POST" class="d-inline m-0"
+                                      onsubmit="return confirm('Yakin ingin menghapus data pengembalian ini?');">
                                     @csrf
-                                    <button type="submit" class="btn btn-sm btn-aksi-edit d-inline-flex align-items-center gap-1">
-                                        <i class="bi bi-check2-circle"></i>
-                                        {{ $peminjaman->tanggal_kembali ? 'Konfirmasi (diajukan)' : 'Konfirmasi' }}
+                                    <button type="submit" class="btn btn-sm btn-aksi-hapus d-inline-flex align-items-center gap-1">
+                                        <i class="bi bi-trash"></i> Hapus
                                     </button>
                                 </form>
-                            @else
-                                <span class="pm-muted">-</span>
-                            @endif
+
+                            </div>
                         </td>
                     </tr>
                     @empty
@@ -321,8 +345,8 @@
                 <tbody>
                     @forelse ($pmDaftar as $row)
                     <tr>
-                        <td class="px-3">{{ $row[0]->user->nama ?? 'User ID: ' . $row[0]->id_user }}</td>
-                        <td class="px-3">{{ $row[0]->alat->nama_alat ?? 'Alat ID: ' . $row[0]->id_alat }}</td>
+                        <td class="px-3">{{ $namaUser[$row[0]->id_user] ?? ('User ID: ' . $row[0]->id_user) }}</td>
+                        <td class="px-3">{{ $namaAlat[$row[0]->id_alat] ?? ('Alat ID: ' . $row[0]->id_alat) }}</td>
                         <td class="px-3">{{ $row[0]->jumlah }} Unit</td>
                         <td class="px-3 pm-muted">{{ $row[0]->tanggal_pinjam }}</td>
                         <td class="px-3 pm-muted">{{ $row[2] ? date('Y-m-d', $row[2]) : '-' }}</td>

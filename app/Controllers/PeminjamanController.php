@@ -72,13 +72,22 @@ class PeminjamanController extends Controller
     }
 
     // BARU: khusus petugas (admin tidak boleh) -> dipakai untuk halaman Pemantauan
-    private function wajibPetugas()
+    private function wajibPetugas(string $pesan = 'Halaman ini hanya untuk petugas.')
     {
         $user = User::current();
         if (!$user || $user->role !== 'petugas') {
-            return redirect(route('admin.dashboard'))->with('error', 'Halaman Pemantauan hanya untuk petugas.');
+            return redirect(route('admin.dashboard'))->with('error', $pesan);
         }
         return null;
+    }
+
+    // BARU: setelah setujui/tolak, petugas kembali ke halaman Persetujuan, admin ke halaman Peminjaman
+    private function kembaliSetelahKeputusan()
+    {
+        $user = User::current();
+        return ($user && $user->role === 'petugas')
+            ? route('peminjaman.persetujuan')
+            : route('peminjaman.index');
     }
 
     // BARU: admin/petugas tidak boleh meminjam alat -> dilempar ke dashboard admin
@@ -166,8 +175,9 @@ class PeminjamanController extends Controller
     // BARU: halaman persetujuan, menampilkan pengajuan yang masih Pending
     public function persetujuan(Request $request)
     {
-        if ($bukanAdmin = $this->wajibAdmin()) {
-            return $bukanAdmin;
+        // DIUBAH: halaman Persetujuan hanya untuk petugas (admin mengelola Peminjaman & Pengembalian)
+        if ($bukanPetugas = $this->wajibPetugas('Halaman Persetujuan hanya untuk petugas.')) {
+            return $bukanPetugas;
         }
 
         $datap = Peminjaman::where('status', 'Pending')
@@ -204,6 +214,32 @@ class PeminjamanController extends Controller
         }
 
         return view('peminjaman.pemantauan', compact('datap', 'namaUser', 'namaAlat'));
+    }
+
+    // BARU: cetak laporan pemantauan (khusus petugas)
+    public function cetakPemantauan(Request $request)
+    {
+        if ($bukanPetugas = $this->wajibPetugas()) {
+            return $bukanPetugas;
+        }
+
+        $this->perbaruiDendaTerlambat(); // DENDA OTOMATIS
+
+        $datap = Peminjaman::where('status', 'Disetujui')
+            ->orderBy('id_peminjaman', 'desc')
+            ->get();
+
+        $namaUser = [];
+        foreach (User::all() as $u) {
+            $namaUser[$u->id] = (string) ($u->username ?? $u->name ?? ('#' . $u->id));
+        }
+
+        $namaAlat = [];
+        foreach (Alat::all() as $a) {
+            $namaAlat[$a->id_alat] = (string) ($a->nama_alat ?? ('#' . $a->id_alat));
+        }
+
+        return view('peminjaman.cetak_pemantauan', compact('datap', 'namaUser', 'namaAlat'));
     }
 
     public function create(Request $request)
@@ -446,7 +482,7 @@ class PeminjamanController extends Controller
             $id_peminjaman
         );
 
-        return redirect(route('peminjaman.index'))->with('success', 'Peminjaman disetujui.');
+        return redirect($this->kembaliSetelahKeputusan())->with('success', 'Peminjaman disetujui.');
     }
 
     // BARU: admin menolak
@@ -468,7 +504,7 @@ class PeminjamanController extends Controller
             $id_peminjaman
         );
 
-        return redirect(route('peminjaman.index'))->with('success', 'Peminjaman ditolak.');
+        return redirect($this->kembaliSetelahKeputusan())->with('success', 'Peminjaman ditolak.');
     }
 
     // proses pengembalian (dipakai admin maupun peminjam): isi tanggal kembali, hitung denda, catat log
@@ -503,14 +539,16 @@ class PeminjamanController extends Controller
     // ADMIN: menandai alat sudah dikembalikan (alat jadi tersedia lagi di katalog)
     public function kembalikan(Request $request, $id_peminjaman)
     {
-        if ($bukanAdmin = $this->wajibAdmin()) {
-            return $bukanAdmin;
+        // DIUBAH: konfirmasi pengembalian khusus admin
+        $user = User::current();
+        if (!$user || $user->role !== 'admin') {
+            return redirect(route('dashboard'))->with('error', 'Konfirmasi pengembalian hanya untuk admin.');
         }
 
         $peminjaman = Peminjaman::findOrFail($id_peminjaman);
         $pesan = $this->prosesKembali($peminjaman);
 
-        return redirect(route('peminjaman.index'))->with('success', $pesan);
+        return redirect(route('pengembalian.index'))->with('success', $pesan);
     }
 
     // PEMINJAM: halaman pengembalian, hanya menampilkan peminjaman milik sendiri
@@ -546,8 +584,8 @@ class PeminjamanController extends Controller
             return redirect(route('dashboard'))->with('error', 'Kamu hanya bisa mengembalikan alat yang kamu pinjam sendiri.');
         }
 
-        // hanya yang sedang dipinjam (sudah disetujui)
-        if (strtolower((string) $peminjaman->status) !== 'disetujui') {
+        // hanya yang belum dikembalikan (Disetujui atau Pending)
+        if (!in_array(strtolower((string) $peminjaman->status), ['disetujui', 'pending'], true)) {
             return redirect(route('peminjaman.pengembalian'))->with('error', 'Peminjaman ini tidak bisa dikembalikan.');
         }
 
@@ -564,7 +602,7 @@ class PeminjamanController extends Controller
 
         $peminjaman->update(['tanggal_kembali' => $tglKembali, 'denda' => $denda]);
 
-        $pesan = 'Pengembalian diajukan. Tunggu konfirmasi admin/petugas.';
+        $pesan = 'Terima kasih! Pengembalian sudah diajukan. Mohon tunggu konfirmasi admin.';
         $ket   = $this->namaUser($peminjaman->id_user) . ' mengajukan pengembalian alat "'
             . $this->namaAlat($peminjaman->id_alat) . '". Menunggu konfirmasi admin.';
 
