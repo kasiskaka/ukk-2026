@@ -23,16 +23,17 @@ class alatController extends Controller
         $datal = $request->validate([
             'nama_alat' => 'required|min:3|max:100',
             'kode_alat' => 'required|varchar|min:3|max:100',
+            'stok'      => 'required|integer|min:0',
         ]);
         $alat = alat::create($datal);
 
         ActivityLog::catat(
             'Menambah alat',
-            'Menambahkan alat "' . $datal['nama_alat'] . '" dengan kode "' . $datal['kode_alat'] . '".',
+            'Menambahkan alat "' . $datal['nama_alat'] . '" dengan kode "' . $datal['kode_alat'] . '" (stok ' . $datal['stok'] . ').',
             'alat',
             $alat->id_alat ?? null,
             null,
-            ['nama_alat' => $datal['nama_alat'], 'kode_alat' => $datal['kode_alat']]
+            ['nama_alat' => $datal['nama_alat'], 'kode_alat' => $datal['kode_alat'], 'stok' => $datal['stok']]
         );
 
         return redirect(route('alat.index'))->with('success', 'Alat berhasil ditambahkan.');
@@ -48,20 +49,25 @@ class alatController extends Controller
     {
         $datal = $request->all();
 
+        // STOK: pastikan berupa angka dan tidak negatif
+        if (isset($datal['stok'])) {
+            $datal['stok'] = max(0, (int) $datal['stok']);
+        }
+
         $alat = alat::FindOrfail($id_alat);
 
         // simpan data lama dulu sebelum diubah
-        $lama = ['nama_alat' => $alat->nama_alat, 'kode_alat' => $alat->kode_alat];
+        $lama = ['nama_alat' => $alat->nama_alat, 'kode_alat' => $alat->kode_alat, 'stok' => $alat->stok];
 
         $alat->update($datal);
 
         ActivityLog::catat(
             'Mengubah alat',
-            'Mengubah alat "' . $lama['nama_alat'] . '" (kode "' . $lama['kode_alat'] . '") menjadi "' . $alat->nama_alat . '" (kode "' . $alat->kode_alat . '").',
+            'Mengubah alat "' . $lama['nama_alat'] . '" (kode "' . $lama['kode_alat'] . '", stok ' . $lama['stok'] . ') menjadi "' . $alat->nama_alat . '" (kode "' . $alat->kode_alat . '", stok ' . $alat->stok . ').',
             'alat',
             $id_alat,
             $lama,
-            ['nama_alat' => $alat->nama_alat, 'kode_alat' => $alat->kode_alat]
+            ['nama_alat' => $alat->nama_alat, 'kode_alat' => $alat->kode_alat, 'stok' => $alat->stok]
         );
 
         return redirect(route('alat.index'))->with('success', 'alat berhasil diubah');

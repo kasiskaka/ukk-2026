@@ -14,6 +14,9 @@
     <label>Kode alat</label>
     <input type="text" name="kode_alat" id="kode_alat" class="form-control" value="{{ $datal->kode_alat }}" required>
 
+    <label>Stok tersedia</label>
+    <input type="number" name="stok" id="stok" class="form-control" min="0" value="{{ $datal->stok ?? 0 }}" required>
+
     <button type="submit" class="btn btn-primary">Simpan</button>
 </form>
 @endsection

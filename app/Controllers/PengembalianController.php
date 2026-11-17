@@ -49,6 +49,42 @@ class PengembalianController extends Controller
         return $telat >= self::BATAS_TELAT_HARI ? self::NOMINAL_DENDA : 0;
     }
 
+    // ===================== STOK ALAT (BARU) =====================
+
+    // BARU: status yang sedang "memegang" stok (alat sedang dipinjam)
+    private function menahanStok($status): bool
+    {
+        return in_array(strtolower((string) $status), ['disetujui', 'dipinjam'], true);
+    }
+
+    // BARU: kurangi / tambah stok sesuai perpindahan status.
+    // Mengembalikan false kalau stok tidak cukup untuk dipinjam.
+    private function sesuaikanStok($idAlat, int $jumlah, $statusLama, $statusBaru): bool
+    {
+        $lama = $this->menahanStok($statusLama);
+        $baru = $this->menahanStok($statusBaru);
+
+        if ($lama === $baru) {
+            return true; // tidak ada perubahan stok
+        }
+
+        $alat = Alat::findOrFail($idAlat);
+        $stok = (int) ($alat->stok ?? 0);
+
+        if ($baru) {
+            // mulai dipinjam -> stok dikurangi
+            if ($stok < $jumlah) {
+                return false;
+            }
+            $alat->update(['stok' => $stok - $jumlah]);
+        } else {
+            // dikembalikan / dibatalkan / dihapus -> stok dikembalikan
+            $alat->update(['stok' => $stok + $jumlah]);
+        }
+
+        return true;
+    }
+
     // ===================== FUNGSI BANTU =====================
     private function namaAlat($id_alat): string
     {
@@ -166,6 +202,11 @@ class PengembalianController extends Controller
         $data = $request->validate($this->aturan());
         $data = $this->rapikan($data, $request->all());
 
+        // STOK: data baru dengan status Disetujui/Dipinjam langsung mengurangi stok
+        if (!$this->sesuaikanStok($data['id_alat'], (int) $data['jumlah'], '', $data['status'])) {
+            return redirect(route('pengembalian.index'))->with('error', 'Stok alat tidak cukup.');
+        }
+
         $baru = Peminjaman::create($data);
 
         ActivityLog::catat(
@@ -204,6 +245,15 @@ class PengembalianController extends Controller
         $data = $request->validate($this->aturan());
         $data = $this->rapikan($data, $request->all());
 
+        // STOK: batalkan efek stok data lama, lalu terapkan efek data baru
+        // (alat, jumlah, dan status bisa berubah sekaligus)
+        $this->sesuaikanStok($peminjaman->id_alat, (int) $peminjaman->jumlah, $peminjaman->status, 'Batal');
+        if (!$this->sesuaikanStok($data['id_alat'], (int) $data['jumlah'], '', $data['status'])) {
+            // stok tidak cukup: pulihkan efek data lama
+            $this->sesuaikanStok($peminjaman->id_alat, (int) $peminjaman->jumlah, '', $peminjaman->status);
+            return redirect(route('pengembalian.index'))->with('error', 'Stok alat tidak cukup.');
+        }
+
         $peminjaman->update($data);
 
         ActivityLog::catat(
@@ -229,6 +279,9 @@ class PengembalianController extends Controller
         $lama     = $this->keArray($peminjaman);
         $namaAlat = $this->namaAlat($peminjaman->id_alat);
         $namaUser = $this->namaUser($peminjaman->id_user);
+
+        // STOK: kalau data yang dihapus sedang menahan stok, kembalikan stoknya
+        $this->sesuaikanStok($peminjaman->id_alat, (int) $peminjaman->jumlah, $peminjaman->status, 'Dihapus');
 
         $peminjaman->delete();
 

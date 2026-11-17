@@ -1,4 +1,3 @@
-```php
 @extends('layouts.app')
 
 @section('title', config('app.name') . ' -- Kerangka PHP Ringan')
@@ -100,6 +99,21 @@
         font-size: 13px;
     }
 
+    .stok-alat {
+        display: inline-block;
+        padding: 5px 12px;
+        border-radius: 8px;
+        background: rgba(214, 177, 92, 0.18);
+        color: #a8801f;
+        font-weight: 700;
+        font-size: 13px;
+    }
+
+    .stok-alat.stok-habis {
+        background: rgba(237, 143, 188, 0.18);
+        color: #d47f9e;
+    }
+
     .btn-edit-alat {
         background: #d6b15c;
         border: 1px solid #d6b15c;
@@ -174,6 +188,7 @@
                 <th>No</th>
                 <th>nama alat</th>
                 <th>kode alat</th>
+                <th>Stok</th>
                 <th>Aksi</th>
             </tr>
 
@@ -189,6 +204,14 @@
                     <span class="kode-alat">
                         {{ $alats->kode_alat }}
                     </span>
+                </td>
+
+                <td>
+                    @if ((int) ($alats->stok ?? 0) > 0)
+                        <span class="stok-alat">{{ (int) $alats->stok }}</span>
+                    @else
+                        <span class="stok-alat stok-habis">Habis</span>
+                    @endif
                 </td>
 
                 <td>
@@ -220,4 +243,3 @@
 </div>
 
 @endsection
-```

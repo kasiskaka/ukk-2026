@@ -230,7 +230,7 @@
 
         <div class="d-flex gap-2">
             <div class="kt-stat"><b id="ktOk">0</b><small>Tersedia</small></div>
-            <div class="kt-stat"><b id="ktPakai">0</b><small>Sedang dipinjam</small></div>
+            <div class="kt-stat"><b id="ktPakai">0</b><small>Habis</small></div>
         </div>
 
         <div class="kt-hero__deco">🖥️</div>
@@ -268,9 +268,9 @@
                     <div class="kt-item__meta">
                         <span>Kode {{ $a->kode_alat }}</span>
                         @if ($a->tersedia)
-                            <span class="badge text-bg-success">Tersedia</span>
+                            <span class="badge text-bg-success">Sisa {{ (int) $a->stok }} unit</span>
                         @else
-                            <span class="badge text-bg-secondary">Sedang dipinjam</span>
+                            <span class="badge text-bg-secondary">Habis</span>
                         @endif
                     </div>
                 </div>
@@ -280,7 +280,7 @@
                         <a href="{{ route('peminjaman.ajukan') }}?id_alat={{ $a->id_alat }}"
                            class="btn btn-gold btn-sm">Pinjam</a>
                     @else
-                        <button class="btn btn-secondary btn-sm" disabled>Penuh</button>
+                        <button class="btn btn-secondary btn-sm" disabled>Habis</button>
                     @endif
                 </div>
             </article>
@@ -302,7 +302,7 @@
         var items = document.querySelectorAll('#ktGrid .kt-item');
         var chips = document.querySelectorAll('#ktChips .kt-chip');
 
-        // Isi angka "Tersedia" dan "Sedang dipinjam" di banner
+        // Isi angka "Tersedia" dan "Habis" di banner
         function tampilkanRingkasan() {
             var pakai = 0;
 

@@ -47,6 +47,42 @@ class PeminjamanController extends Controller
         return null;
     }
 
+    // ===================== STOK ALAT (BARU) =====================
+
+    // BARU: status yang sedang "memegang" stok (alat sedang dipinjam)
+    private function menahanStok($status): bool
+    {
+        return in_array(strtolower((string) $status), ['disetujui', 'dipinjam'], true);
+    }
+
+    // BARU: kurangi / tambah stok sesuai perpindahan status.
+    // Mengembalikan false kalau stok tidak cukup untuk dipinjam.
+    private function sesuaikanStok($idAlat, int $jumlah, $statusLama, $statusBaru): bool
+    {
+        $lama = $this->menahanStok($statusLama);
+        $baru = $this->menahanStok($statusBaru);
+
+        if ($lama === $baru) {
+            return true; // tidak ada perubahan stok
+        }
+
+        $alat = Alat::findOrFail($idAlat);
+        $stok = (int) ($alat->stok ?? 0);
+
+        if ($baru) {
+            // mulai dipinjam -> stok dikurangi
+            if ($stok < $jumlah) {
+                return false;
+            }
+            $alat->update(['stok' => $stok - $jumlah]);
+        } else {
+            // dikembalikan / dibatalkan / dihapus -> stok dikembalikan
+            $alat->update(['stok' => $stok + $jumlah]);
+        }
+
+        return true;
+    }
+
     // ===================== HAK AKSES =====================
 
     // role yang boleh membuka halaman kelola peminjaman (sesuaikan dengan nama role di aplikasimu)
@@ -268,6 +304,7 @@ class PeminjamanController extends Controller
         ]);
 
         // Set status awal peminjaman
+        // (Pending belum menahan stok, stok baru berkurang saat disetujui)
         $datap['status'] = 'Pending';
         $datap['denda'] = 0;
 
@@ -325,6 +362,19 @@ class PeminjamanController extends Controller
             $datap['denda'] = $this->hitungDenda($tglPinjam);
         }
 
+        // STOK: batalkan efek stok data lama, lalu terapkan efek data baru
+        // (alat, jumlah, dan status bisa berubah sekaligus di form edit)
+        $statusStok = $datap['status'] ?? $peminjaman->status;
+        $idAlatBaru = $datap['id_alat'] ?? $peminjaman->id_alat;
+        $jumlahBaru = (int) ($datap['jumlah'] ?? $peminjaman->jumlah);
+
+        $this->sesuaikanStok($peminjaman->id_alat, (int) $peminjaman->jumlah, $peminjaman->status, 'Batal');
+        if (!$this->sesuaikanStok($idAlatBaru, $jumlahBaru, '', $statusStok)) {
+            // stok tidak cukup: pulihkan efek data lama
+            $this->sesuaikanStok($peminjaman->id_alat, (int) $peminjaman->jumlah, '', $peminjaman->status);
+            return redirect(route('peminjaman.index'))->with('error', 'Stok alat tidak cukup.');
+        }
+
         $peminjaman->update($datap);
 
         // TAMBAHAN: catat log
@@ -366,6 +416,9 @@ class PeminjamanController extends Controller
         $namaAlat = $this->namaAlat($peminjaman->id_alat);
         $namaUser = $this->namaUser($peminjaman->id_user);
 
+        // STOK: kalau peminjaman yang dihapus sedang menahan stok, kembalikan stoknya
+        $this->sesuaikanStok($peminjaman->id_alat, (int) $peminjaman->jumlah, $peminjaman->status, 'Dihapus');
+
         $peminjaman->delete();
 
         // TAMBAHAN: catat log
@@ -382,7 +435,7 @@ class PeminjamanController extends Controller
 
     // ===================== BARU: katalog untuk peminjam =====================
 
-    // BARU: katalog alat (bisa dicari, menampilkan tersedia / sedang dipinjam)
+    // BARU: katalog alat (bisa dicari, menampilkan tersedia / habis berdasarkan stok)
     public function katalog(Request $request)
     {
         if ($blok = $this->blokirAdmin()) {
@@ -391,20 +444,13 @@ class PeminjamanController extends Controller
 
         $q = strtolower(trim($_GET['q'] ?? ''));
 
-        // id alat yang sedang dipinjam (sudah disetujui)
-        $dipinjam = [];
-        foreach (Peminjaman::all() as $p) {
-            if (strtolower($p->status) === 'disetujui') {
-                $dipinjam[] = $p->id_alat;
-            }
-        }
-
         $daftar = [];
         foreach (Alat::all() as $a) {
             if ($q !== '' && strpos(strtolower($a->nama_alat . ' ' . $a->kode_alat), $q) === false) {
                 continue;
             }
-            $a->tersedia = !in_array($a->id_alat, $dipinjam);
+            // STOK: alat tersedia kalau stoknya masih ada
+            $a->tersedia = (int) ($a->stok ?? 0) > 0;
             $daftar[] = $a;
         }
 
@@ -420,8 +466,6 @@ class PeminjamanController extends Controller
             return $blok;
         }
 
-        // Jika tabel alat sudah punya kolom status, ganti jadi:
-        // $alat = Alat::where('status', 'tersedia')->get();
         $alat = Alat::all();
         $dipilih = $_GET['id_alat'] ?? '';
         return view('peminjaman.ajukan', compact('alat', 'dipilih'));
@@ -439,6 +483,14 @@ class PeminjamanController extends Controller
             'jumlah'         => 'required|integer|min:1',
             'tanggal_pinjam' => 'required|date',
         ]);
+
+        // STOK: jumlah yang diajukan tidak boleh melebihi stok tersedia
+        $alatDipilih = Alat::findOrFail($datap['id_alat']);
+        $stokTersedia = (int) ($alatDipilih->stok ?? 0);
+        if ((int) $datap['jumlah'] > $stokTersedia) {
+            return redirect(route('peminjaman.ajukan'))
+                ->with('error', 'Jumlah melebihi stok tersedia (' . $stokTersedia . ' unit).');
+        }
 
         $user = User::current();
 
@@ -463,7 +515,7 @@ class PeminjamanController extends Controller
 
     // ===================== BARU: persetujuan oleh admin =====================
 
-    // BARU: admin menyetujui
+    // BARU: admin menyetujui (stok alat dikurangi)
     public function setujui(Request $request, $id_peminjaman)
     {
         if ($bukanAdmin = $this->wajibAdmin()) {
@@ -471,6 +523,17 @@ class PeminjamanController extends Controller
         }
 
         $peminjaman = Peminjaman::findOrFail($id_peminjaman);
+
+        // STOK: hanya pengajuan Pending yang boleh disetujui (mencegah stok terpotong dua kali)
+        if (strtolower((string) $peminjaman->status) !== 'pending') {
+            return redirect($this->kembaliSetelahKeputusan())->with('error', 'Pengajuan ini sudah diproses.');
+        }
+
+        // STOK: kurangi stok, tolak kalau stok tidak cukup
+        if (!$this->sesuaikanStok($peminjaman->id_alat, (int) $peminjaman->jumlah, $peminjaman->status, 'Disetujui')) {
+            return redirect($this->kembaliSetelahKeputusan())->with('error', 'Stok alat tidak cukup.');
+        }
+
         $peminjaman->update(['status' => 'Disetujui']);
 
         // TAMBAHAN: catat log
@@ -518,6 +581,9 @@ class PeminjamanController extends Controller
             ? date('Y-m-d', strtotime((string) $peminjaman->tanggal_kembali))
             : date('Y-m-d');
         $denda = $this->hitungDenda($peminjaman->tanggal_pinjam, $tglKembali);
+
+        // STOK: alat kembali, stok ditambah lagi (tidak berubah kalau sudah berstatus Dikembalikan)
+        $this->sesuaikanStok($peminjaman->id_alat, (int) $peminjaman->jumlah, $peminjaman->status, 'Dikembalikan');
 
         $peminjaman->update(['status' => 'Dikembalikan', 'tanggal_kembali' => $tglKembali, 'denda' => $denda]);
 
@@ -597,6 +663,7 @@ class PeminjamanController extends Controller
         $lama = $this->keArray($peminjaman);
 
         // tanggal kembali = hari ini (saat peminjam menekan tombol); denda dihitung dari tanggal ini
+        // (stok baru bertambah saat admin mengonfirmasi lewat kembalikan())
         $tglKembali = date('Y-m-d');
         $denda = $this->hitungDenda($peminjaman->tanggal_pinjam, $tglKembali);
 

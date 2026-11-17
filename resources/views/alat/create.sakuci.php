@@ -11,6 +11,8 @@
     <input type="text" name="nama_alat" id="nama_kategori" class="form-control"  value="{{ old('nama_alat') }}" required>
     <label>Kode alat</label>
     <input type="text" name="kode_alat" id="kode_kategori" class="form-control" value="{{ old('kode_alat') }}" required>
+    <label>Stok</label>
+    <input type="number" name="stok" id="stok" class="form-control" min="0" value="{{ old('stok', 1) }}" required>
 
     <button type="submit" class="btn btn-primary">Simpan</button>
 </form>
